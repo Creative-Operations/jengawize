@@ -1,40 +1,40 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.7.3;
+pragma solidity ^0.8.9;
 
 contract Jengawize {
-    // State variable to store the owner of the contract
     address public owner;
 
-    // Struct to represent an item
     struct Item {
         uint256 id;
         string name;
         string category;
         string image;
         uint256 cost;
-        uint256 rating;
+        uint256 rating;    
         uint256 stock;
     }
 
-    // Mapping to store items by their ID
+    struct Order {
+        uint256 time;
+        Item item;
+    }
+
     mapping(uint256 => Item) public items;
+    mapping(address => mapping(uint256 => Order)) public orders;
+    mapping(address => uint256) public orderCount;
 
-    // Events for listing and buying items
-    event List(uint256 id, string name, uint256 cost, uint256 stock);
-    event Buy(uint256 id, address buyer, uint256 cost);
+    event Buy(address buyer, uint256 orderId, uint256 itemId);
+    event List(string name, uint256 cost, uint256 quantity);
 
-    // Modifier to restrict access to the owner
     modifier onlyOwner() {
-        require(msg.sender == owner, "Only the owner can perform this action");
+        require(msg.sender == owner);
         _;
     }
 
-    // Constructor to set the initial owner of the contract
     constructor() {
         owner = msg.sender;
     }
 
-    // Function to list a new product
     function list(
         uint256 _id,
         string memory _name,
@@ -44,45 +44,53 @@ contract Jengawize {
         uint256 _rating,
         uint256 _stock
     ) public onlyOwner {
-        // Ensure the product does not already exist
-        require(items[_id].id == 0, "Item with this ID already exists");
+        // Create Item
+        Item memory item = Item(
+            _id,
+            _name,
+            _category,
+            _image,
+            _cost,
+            _rating,
+            _stock
+        );
 
-        // Create the item
-        Item memory item = Item(_id, _name, _category, _image, _cost, _rating, _stock);
-
-        // Save the item in the mapping
+        // Add Item to mapping
         items[_id] = item;
 
-        // Emit the List event
-        emit List(_id, _name, _cost, _stock);
+        // Emit event
+        emit List(_name, _cost, _stock);
     }
 
-    // Function to buy a product
     function buy(uint256 _id) public payable {
-        // Fetch the item
-        Item storage item = items[_id];
+        // Fetch item
+        Item memory item = items[_id];
 
-        // Ensure the item exists and has stock
-        require(item.id != 0, "Item does not exist");
-        require(item.stock > 0, "Item is out of stock");
+        // Require enough ether to buy item
+        require(msg.value >= item.cost);
 
-        // Ensure the buyer sent enough ETH
-        require(msg.value >= item.cost, "Insufficient payment");
+        // Require item is in stock
+        require(item.stock > 0);
 
-        // Reduce the stock
-        item.stock--;
+        // Create order
+        Order memory order = Order(block.timestamp, item);
 
-        // Emit the Buy event
-        emit Buy(_id, msg.sender, item.cost);
+        // Add order for user
+        orderCount[msg.sender]++; // <-- Order ID
+        orders[msg.sender][orderCount[msg.sender]] = order;
+
+        // Subtract stock
+        items[_id].stock = item.stock - 1;
+
+        // Emit event
+        emit Buy(msg.sender, orderCount[msg.sender], item.id);
     }
 
-    // Function to withdraw contract funds (for the owner)
     function withdraw() public onlyOwner {
-        // Transfer the balance to the owner
         (bool success, ) = owner.call{value: address(this).balance}("");
-        require(success, "Withdrawal failed");
+        require(success);
     }
-
-    // Fallback function to receive ETH
-    receive() external payable {}
 }
+
+
+
