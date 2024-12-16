@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ethers } from 'ethers';
+import itemsData from './items.json'; // Import items.json
 
 // Components
 import Navigation from './components/Navigation';
@@ -46,23 +47,23 @@ function App() {
     const network = await provider.getNetwork();
     console.log('Network:', network);
 
-    // Load smart contract
-    const jengawize = new ethers.Contract(
-      config[network.chainId]?.jengawize?.address,
-      Jengawize,
-      provider
-    );
+    let items = [];
+    try {
+      const jengawize = new ethers.Contract(
+        config[network.chainId]?.jengawize?.address,
+        Jengawize,
+        provider
+      );
+      setJengawize(jengawize);
 
-    setJengawize(jengawize);
-
-    const items = [];
-    for (let i = 0; i < 9; i++) {
-      try {
+      // Attempt to load items from the blockchain
+      for (let i = 0; i < 9; i++) {
         const item = await jengawize.items(i + 1);
         items.push(item);
-      } catch (error) {
-        console.error(`Failed to load item ${i + 1}:`, error);
       }
+    } catch (error) {
+      console.error('Failed to load blockchain items. Falling back to local items.json:', error);
+      items = itemsData; // Load items from local JSON
     }
 
     console.log('Items:', items);
