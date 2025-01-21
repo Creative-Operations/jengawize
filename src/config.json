@@ -1,7 +1,12 @@
 {
-    "31337": {
-        "jengawize": {
-            "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3"
-        }
+  "31337": {
+    "jengawize": {
+      "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3"
     }
+  },
+  "35443": {
+    "jengawize": {
+      "address": "0x081dD689e6Aaa61Aa49CE4D7E175f42A563831DB"
+    }
+  }
 }
